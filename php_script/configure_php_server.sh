@@ -1,11 +1,21 @@
 #!/bin/bash
 
-# Script to configure a server for a PHP environment
+# Script to configure a server for a PHP environment with specified PHP version
 # Supports: WordPress, Drupal, PrestaShop, Sylius
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-echo "🔧 Starting server configuration for PHP environment..."
+# Check if a PHP version argument is passed
+if [ -z "$1" ]; then
+    echo "❌ Error: No PHP version specified!"
+    echo "Usage: $0 <php_version>"
+    echo "Example: $0 8.2"
+    exit 1
+fi
+
+PHP_VERSION=$1
+
+echo "🔧 Starting server configuration for PHP environment with PHP $PHP_VERSION..."
 
 # Update and upgrade system packages
 echo "⏳ Updating system packages..."
@@ -16,7 +26,6 @@ echo "📦 Installing essential packages..."
 sudo apt install -y software-properties-common curl wget unzip git
 
 # Add PHP PPA and install PHP
-PHP_VERSION="8.2"
 echo "🐘 Adding PHP repository and installing PHP $PHP_VERSION..."
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt update
@@ -50,7 +59,7 @@ sudo systemctl start nginx
 sudo systemctl enable nginx
 
 # Create a sample Nginx configuration for PHP applications
-echo "🔧 Configuring Nginx for PHP..."
+echo "🔧 Configuring Nginx for PHP $PHP_VERSION..."
 cat <<EOL | sudo tee /etc/nginx/sites-available/php_app
 server {
     listen 80;

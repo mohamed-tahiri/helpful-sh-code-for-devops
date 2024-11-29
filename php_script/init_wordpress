@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -e
+
+echo "🌟 Initialisation de WordPress..."
+
+# Variables
+DB_NAME="wordpress"
+DB_USER="wp_user"
+DB_PASSWORD="wp_pass"
+WP_DIR="/var/www/html/wordpress"
+
+# Créer la base de données et l'utilisateur
+echo "📂 Création de la base de données pour WordPress..."
+sudo mysql -uroot -proot -e "CREATE DATABASE $DB_NAME;"
+sudo mysql -uroot -proot -e "CREATE USER '$DB_USER'@'localhost' IDENTIFIED BY '$DB_PASSWORD';"
+sudo mysql -uroot -proot -e "GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'localhost';"
+sudo mysql -uroot -proot -e "FLUSH PRIVILEGES;"
+
+# Télécharger et configurer WordPress
+echo "⬇️ Téléchargement de WordPress..."
+wget https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+sudo mv wordpress $WP_DIR
+sudo chown -R www-data:www-data $WP_DIR
+sudo chmod -R 755 $WP_DIR
+
+# Configurer wp-config.php
+echo "🛠 Configuration de WordPress..."
+cp $WP_DIR/wp-config-sample.php $WP_DIR/wp-config.php
+sed -i "s/database_name_here/$DB_NAME/" $WP_DIR/wp-config.php
+sed -i "s/username_here/$DB_USER/" $WP_DIR/wp-config.php
+sed -i "s/password_here/$DB_PASSWORD/" $WP_DIR/wp-config.php
+
+echo "🎉 WordPress est prêt ! Accédez à votre site pour terminer l'installation."
+
