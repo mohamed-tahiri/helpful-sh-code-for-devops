@@ -52,6 +52,26 @@ y
 y
 EOF
 
+# Install phpMyAdmin
+echo "📦 Installing phpMyAdmin..."
+sudo apt install -y phpmyadmin
+
+# Link phpMyAdmin to the web server
+echo "🔗 Configuring phpMyAdmin with Nginx..."
+sudo ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin
+
+# Permissions for phpMyAdmin
+echo "🛠 Setting permissions for phpMyAdmin..."
+sudo chown -R www-data:www-data /usr/share/phpmyadmin
+sudo chmod -R 755 /usr/share/phpmyadmin
+
+# Restart services to apply changes
+echo "♻️ Restarting services..."
+sudo systemctl reload nginx
+sudo systemctl restart php$PHP_VERSION-fpm
+
+echo "🎉 phpMyAdmin installation completed! Access it at: http://<server-ip>/phpmyadmin"
+
 # Install and configure Nginx
 echo "🚀 Installing and configuring Nginx..."
 sudo apt install -y nginx
@@ -102,7 +122,7 @@ sudo mv composer.phar /usr/local/bin/composer
 
 # Optional: Install Node.js and npm (useful for themes and frontend builds)
 echo "🌐 Installing Node.js and npm..."
-curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
 echo "🎉 Server configuration completed! Ready for WordPress, Drupal, PrestaShop, or Sylius."
