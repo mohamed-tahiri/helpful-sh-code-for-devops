@@ -1,45 +1,41 @@
 #!/bin/bash
 
-# Script to configure a server for a PHP environment with specified PHP version
-# Supports: WordPress, Drupal, PrestaShop, Sylius
+set -e  # Exit immediately on error
 
-set -e  # Exit immediately if a command exits with a non-zero status
-
-# Check if a PHP version argument is passed
+# Check PHP version
 if [ -z "$1" ]; then
     echo "❌ Error: No PHP version specified!"
     echo "Usage: $0 <php_version>"
-    echo "Example: $0 8.2"
     exit 1
 fi
 
 PHP_VERSION=$1
 
-echo "🔧 Starting server configuration for PHP environment with PHP $PHP_VERSION..."
+echo "🔧 Configuring server with PHP $PHP_VERSION..."
 
-# Update and upgrade system packages
+# Update packages
 echo "⏳ Updating system packages..."
 sudo apt update && sudo apt upgrade -y
 
 # Install essential packages
-echo "📦 Installing essential packages..."
+echo "📦 Installing essentials..."
 sudo apt install -y software-properties-common curl wget unzip git
 
 # Add PHP PPA and install PHP
-echo "🐘 Adding PHP repository and installing PHP $PHP_VERSION..."
+echo "🐘 Installing PHP $PHP_VERSION..."
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt update
-sudo apt install -y php$PHP_VERSION php$PHP_VERSION-cli php$PHP_VERSION-fpm \
+sudo apt install -y php$PHP_VERSION php$PHP_VERSION-fpm \
   php$PHP_VERSION-mysql php$PHP_VERSION-xml php$PHP_VERSION-mbstring \
   php$PHP_VERSION-curl php$PHP_VERSION-zip php$PHP_VERSION-gd php$PHP_VERSION-intl
 
-# Install database server (MySQL or MariaDB)
-echo "📂 Installing MariaDB server..."
+# Install MariaDB
+echo "📂 Installing MariaDB..."
 sudo apt install -y mariadb-server mariadb-client
 sudo systemctl start mariadb
 sudo systemctl enable mariadb
 
-# Secure MariaDB installation
+# Secure MariaDB
 echo "🔒 Securing MariaDB..."
 sudo mysql_secure_installation <<EOF
 
@@ -56,30 +52,20 @@ EOF
 echo "📦 Installing phpMyAdmin..."
 sudo apt install -y phpmyadmin
 
-# Link phpMyAdmin to the web server
+# Ensure web root exists and link phpMyAdmin
 echo "🔗 Configuring phpMyAdmin with Nginx..."
+sudo mkdir -p /var/www/html
 sudo ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin
-
-# Permissions for phpMyAdmin
-echo "🛠 Setting permissions for phpMyAdmin..."
 sudo chown -R www-data:www-data /usr/share/phpmyadmin
 sudo chmod -R 755 /usr/share/phpmyadmin
 
-# Restart services to apply changes
-echo "♻️ Restarting services..."
-sudo systemctl reload nginx
-sudo systemctl restart php$PHP_VERSION-fpm
-
-echo "🎉 phpMyAdmin installation completed! Access it at: http://<server-ip>/phpmyadmin"
-
 # Install and configure Nginx
-echo "🚀 Installing and configuring Nginx..."
+echo "🚀 Configuring Nginx..."
 sudo apt install -y nginx
 sudo systemctl start nginx
 sudo systemctl enable nginx
 
-# Create a sample Nginx configuration for PHP applications
-echo "🔧 Configuring Nginx for PHP $PHP_VERSION..."
+# Create Nginx configuration
 cat <<EOL | sudo tee /etc/nginx/sites-available/php_app
 server {
     listen 80;
@@ -105,27 +91,25 @@ server {
 }
 EOL
 
-# Enable the new Nginx configuration
+# Enable Nginx configuration
 sudo ln -s /etc/nginx/sites-available/php_app /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
-# Permissions for the web directory
+# Set web directory permissions
 echo "🛠 Setting permissions for /var/www/html..."
 sudo chown -R www-data:www-data /var/www/html
 sudo chmod -R 755 /var/www/html
 
 # Optional: Install Composer
-echo "🎼 Installing Composer (PHP package manager)..."
+echo "🎼 Installing Composer..."
 curl -sS https://getcomposer.org/installer | php
 sudo mv composer.phar /usr/local/bin/composer
 
-# Optional: Install Node.js and npm (useful for themes and frontend builds)
-echo "🌐 Installing Node.js and npm..."
+# Optional: Install Node.js and npm
+echo "🌐 Installing Node.js..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-echo "🎉 Server configuration completed! Ready for WordPress, Drupal, PrestaShop, or Sylius."
-
-# End of script
+echo "🎉 Configuration completed! Access phpMyAdmin at http://<server-ip>/phpmyadmin"
 
