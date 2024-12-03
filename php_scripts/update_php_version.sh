@@ -2,7 +2,7 @@
 
 set -e  # Exit immediately on error
 
-# Check PHP version argument
+# Check PHP version
 if [ -z "$1" ]; then
     echo "❌ Error: No PHP version specified!"
     echo "Usage: $0 <php_version>"
@@ -11,7 +11,7 @@ fi
 
 PHP_VERSION=$1
 
-echo "🔧 Configuring server with PHP $PHP_VERSION..."
+echo "🔧 Updating server to use PHP $PHP_VERSION..."
 
 # Update packages
 echo "⏳ Updating system packages..."
@@ -21,7 +21,7 @@ sudo apt update && sudo apt upgrade -y
 echo "📦 Installing essentials..."
 sudo apt install -y software-properties-common curl wget unzip git
 
-# Add PHP PPA and install PHP
+# Add PHP PPA and install PHP version
 echo "🐘 Installing PHP $PHP_VERSION..."
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt update
@@ -29,17 +29,10 @@ sudo apt install -y php$PHP_VERSION php$PHP_VERSION-fpm \
   php$PHP_VERSION-mysql php$PHP_VERSION-xml php$PHP_VERSION-mbstring \
   php$PHP_VERSION-curl php$PHP_VERSION-zip php$PHP_VERSION-gd php$PHP_VERSION-intl
 
-# Set PHP $PHP_VERSION as default
-echo "🔄 Configuring PHP $PHP_VERSION as the default version..."
+# Set PHP version as default
+echo "🔄 Setting PHP $PHP_VERSION as the default version..."
 sudo update-alternatives --set php /usr/bin/php$PHP_VERSION
-
-# Verify PHP version
-if php -v | grep -q "PHP $PHP_VERSION"; then
-    echo "✅ PHP $PHP_VERSION is now the default."
-else
-    echo "❌ Failed to set PHP $PHP_VERSION as default. Please check manually."
-    exit 1
-fi
+sudo systemctl restart php$PHP_VERSION-fpm
 
 # Install MariaDB
 echo "📂 Installing MariaDB..."
@@ -67,7 +60,7 @@ sudo apt install -y phpmyadmin
 # Ensure web root exists and link phpMyAdmin
 echo "🔗 Configuring phpMyAdmin with Nginx..."
 sudo mkdir -p /var/www/html
-sudo ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin
+sudo ln -sf /usr/share/phpmyadmin /var/www/html/phpmyadmin
 sudo chown -R www-data:www-data /usr/share/phpmyadmin
 sudo chmod -R 755 /usr/share/phpmyadmin
 
@@ -104,7 +97,7 @@ server {
 EOL
 
 # Enable Nginx configuration
-sudo ln -s /etc/nginx/sites-available/php_app /etc/nginx/sites-enabled/
+sudo ln -sf /etc/nginx/sites-available/php_app /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 
@@ -123,5 +116,4 @@ echo "🌐 Installing Node.js..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-echo "🎉 Configuration completed! Access phpMyAdmin at http://<server-ip>/phpmyadmin"
-
+echo "🎉 PHP $PHP_VERSION setup completed! Access phpMyAdmin at http://<server-ip>/phpmyadmin"
