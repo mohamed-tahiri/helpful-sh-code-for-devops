@@ -23,7 +23,7 @@ server {
     server_name https://3.85.174.23/;
 
     # Set the root directory to where PrestaShop is installed
-    root /var/www/html/prestashop;
+    root /var/www/html/wordpress;
     index index.php index.html index.htm;
 
     # Main location block
