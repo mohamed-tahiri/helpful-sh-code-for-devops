@@ -44,57 +44,47 @@ echo "📦 Installing Gradle..."
 sudo apt install -y gradle
 gradle -v
 
-# Install Tomcat
-echo "🐱 Installing Tomcat server..."
-TOMCAT_VERSION="10.1.13"
-TOMCAT_DIR="/opt/tomcat"
-wget https://downloads.apache.org/tomcat/tomcat-10/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz -P /tmp
-sudo mkdir -p $TOMCAT_DIR
-sudo tar -xvzf /tmp/apache-tomcat-$TOMCAT_VERSION.tar.gz -C $TOMCAT_DIR --strip-components=1
-sudo rm /tmp/apache-tomcat-$TOMCAT_VERSION.tar.gz
+# Install and Configure Nginx
+echo "🌐 Installing and configuring Nginx..."
+sudo apt install -y nginx
 
-# Set permissions for Tomcat
-echo "🔑 Setting permissions for Tomcat..."
-sudo chmod +x $TOMCAT_DIR/bin/*.sh
-sudo chown -R www-data:www-data $TOMCAT_DIR
+# Create a basic Nginx configuration file
+cat <<EOL | sudo tee /etc/nginx/sites-available/java_server
+server {
+    listen 80;
+    server_name _;
 
-# Create systemd service for Tomcat
-echo "⚙️ Configuring Tomcat as a service..."
-cat <<EOL | sudo tee /etc/systemd/system/tomcat.service
-[Unit]
-Description=Apache Tomcat Web Application Container
-After=network.target
+    location / {
+        proxy_pass http://127.0.0.1:8080;  # Forward requests to Java app running on port 8080
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+    }
 
-[Service]
-Type=forking
-User=www-data
-Group=www-data
-Environment="JAVA_HOME=/usr/lib/jvm/java-$JAVA_VERSION-openjdk-amd64"
-Environment="CATALINA_HOME=$TOMCAT_DIR"
-ExecStart=$TOMCAT_DIR/bin/startup.sh
-ExecStop=$TOMCAT_DIR/bin/shutdown.sh
-
-[Install]
-WantedBy=multi-user.target
+    error_page 404 /404.html;
+    location = /404.html {
+        root /usr/share/nginx/html;
+    }
+}
 EOL
 
-sudo systemctl daemon-reload
-sudo systemctl enable tomcat
-sudo systemctl start tomcat
+# Enable the Nginx configuration
+sudo ln -s /etc/nginx/sites-available/java_server /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 
-# Confirm Tomcat installation
-echo "🌐 Checking Tomcat status..."
-if sudo systemctl status tomcat | grep -q "active (running)"; then
-    echo "✅ Tomcat is running. Access it at http://<server-ip>:8080"
-else
-    echo "❌ Tomcat failed to start. Please check the logs."
-    exit 1
-fi
+# Test and restart Nginx
+echo "🔧 Testing Nginx configuration..."
+sudo nginx -t
+
+echo "🔄 Restarting Nginx..."
+sudo systemctl restart nginx
+sudo systemctl enable nginx
 
 # Optional: Install Node.js (if needed for modern Java projects)
 echo "🌐 Installing Node.js..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-echo "🎉 Configuration completed! Java $JAVA_VERSION, Maven, Gradle, and Tomcat are ready to use."
-
+echo "🎉 Configuration completed! Java $JAVA_VERSION, Maven, Gradle, and Nginx are ready to use."
