@@ -87,4 +87,18 @@ echo "🌐 Installing Node.js..."
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-echo "🎉 Configuration completed! Java $JAVA_VERSION, Maven, Gradle, and Nginx are ready to use."
+# Install PostgreSQL
+echo "🐘 Installing PostgreSQL..."
+sudo apt install -y postgresql postgresql-contrib
+
+# Configure PostgreSQL
+echo "🔧 Configuring PostgreSQL..."
+sudo -u postgres psql -c "CREATE USER myuser WITH PASSWORD 'mypassword';"
+sudo -u postgres psql -c "CREATE DATABASE mydatabase OWNER myuser;"
+sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE mydatabase TO myuser;"
+
+# Ensure PostgreSQL starts on boot
+sudo systemctl enable postgresql
+
+echo "🎉 Configuration completed! Java $JAVA_VERSION, Maven, Gradle, Nginx, and PostgreSQL are ready to use."
+
