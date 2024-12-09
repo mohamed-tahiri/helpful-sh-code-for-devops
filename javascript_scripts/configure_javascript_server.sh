@@ -2,69 +2,61 @@
 
 set -e  # Exit immediately on error
 
-# Check Node.js version argument
-if [ -z "$1" ]; then
-    echo "❌ Error: No Node.js version specified!"
-    echo "Usage: $0 <node_version>"
-    exit 1
-fi
+echo "🔧 Configuring JavaScript server environment..."
 
-NODE_VERSION=$1
-
-echo "🔧 Configuring server with Node.js $NODE_VERSION..."
-
-# Update packages
+# Update system packages
 echo "⏳ Updating system packages..."
 sudo apt update && sudo apt upgrade -y
 
 # Install essential packages
 echo "📦 Installing essentials..."
-sudo apt install -y curl wget git build-essential
+sudo apt install -y software-properties-common curl wget git build-essential libssl-dev
 
-# Install Node.js and npm
-echo "🌐 Installing Node.js and npm..."
-curl -fsSL https://deb.nodesource.com/setup_$NODE_VERSION.x | sudo -E bash -
-sudo apt install -y nodejs
+# Install NVM (Node Version Manager)
+echo "🌐 Installing NVM..."
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.6/install.sh | bash
 
-# Verify Node.js and npm installation
-echo "✅ Verifying Node.js and npm installation..."
-if node -v | grep -q "v$NODE_VERSION"; then
-    echo "✅ Node.js $NODE_VERSION installed successfully."
-else
-    echo "❌ Failed to install Node.js $NODE_VERSION. Please check manually."
-    exit 1
-fi
+# Load NVM
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Install LTS Node.js version
+echo "🌐 Installing Node.js using NVM..."
+nvm install --lts
+nvm use --lts
+node -v
+npm -v
 
 # Install Yarn
-echo "🎩 Installing Yarn..."
-sudo npm install -g yarn
+echo "📦 Installing Yarn..."
+npm install -g yarn
 
-# Install PM2
-echo "⚙️ Installing PM2 for process management..."
-sudo npm install -g pm2
+# Set up a basic project directory structure
+echo "📂 Setting up development directories..."
+mkdir -p ~/javascript-server
+cd ~/javascript-server
 
-# Set up basic project directory
-echo "🛠 Setting up basic project structure..."
-PROJECT_DIR="/var/www/javascript_app"
-sudo mkdir -p $PROJECT_DIR
-sudo chown -R $USER:$USER $PROJECT_DIR
-cd $PROJECT_DIR
-echo "console.log('Hello, JavaScript!');" > app.js
+# Initialize a new Node.js project
+echo "🛠️ Initializing a new Node.js project..."
+npm init -y
 
-# Set permissions
-echo "🛠 Setting permissions for $PROJECT_DIR..."
-sudo chown -R www-data:www-data $PROJECT_DIR
-sudo chmod -R 755 $PROJECT_DIR
+# Install common development dependencies
+echo "📦 Installing development dependencies..."
+npm install --save-dev eslint prettier lint-staged
 
-# Start application with PM2
-echo "🚀 Starting application with PM2..."
-pm2 start app.js --name "javascript-app"
-pm2 save
-pm2 startup
+# Set up lint-staged configuration
+echo "🛡️ Setting up lint-staged config..."
+cat <<EOL > package.json
+{
+  "lint-staged": {
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
+  }
+}
+EOL
 
-# Optional: Install ESLint
-echo "📏 Installing ESLint for code linting..."
-sudo npm install -g eslint
-
-echo "🎉 JavaScript server setup completed! Your application is running with PM2."
+echo "🎉 JavaScript server environment with Node.js version manager, Yarn, Lint-Staged configured successfully!"
 
